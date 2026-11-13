@@ -1,34 +1,594 @@
-<!DOCTYPE html><html lang="zh-Hant"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"><title>黎明尋寶小冒險</title><style>
-*{box-sizing:border-box}body{margin:0;overflow:hidden;font-family:system-ui,sans-serif;background:#b8e8e8;color:#334d50}canvas{display:block}#hud{position:absolute;inset:0;pointer-events:none;padding:16px;display:flex;flex-direction:column;align-items:flex-start;gap:8px}.pill,.box{background:#fffdf1eF;border:3px solid #fff;border-radius:20px;padding:10px 15px;box-shadow:0 5px 0 #79aaa480}h1{font-size:20px;margin:0}#mission{max-width:360px;font-weight:bold;line-height:1.5}#prompt{position:absolute;left:50%;bottom:105px;transform:translateX(-50%);text-align:center;display:none;white-space:nowrap}button{pointer-events:auto;border:0;border-radius:16px;background:#ffcc69;color:#604333;font-weight:800;padding:13px 19px;box-shadow:0 4px 0 #d89f47;font-size:16px;cursor:pointer}button:active{transform:translateY(3px);box-shadow:0 1px 0 #d89f47}#controls{position:absolute;bottom:18px;left:18px;display:grid;grid-template-columns:repeat(3,55px);gap:5px;pointer-events:auto;touch-action:none}#controls button{padding:12px}#action{position:absolute;right:18px;bottom:25px;background:#ff9291;box-shadow:0 4px 0 #d16f73}#modal{position:absolute;inset:0;background:#183f4699;display:flex;align-items:center;justify-content:center;padding:20px;pointer-events:auto}#modal .card{background:#fffdf2;border:5px solid white;border-radius:28px;max-width:480px;width:100%;padding:24px;box-shadow:0 10px 0 #3f7979;text-align:center;line-height:1.7}#modal h2{margin:0;color:#df7777}#modal p{white-space:pre-line}#photos{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;max-height:210px;overflow:auto;margin:10px 0}#photos img{width:100%;height:65px;object-fit:cover;border-radius:8px;cursor:pointer}#modal video{width:100%;max-height:240px;border-radius:12px;display:none}#mutebtn{position:absolute;right:15px;top:15px;background:#fffdf1;font-size:14px;padding:9px 12px}small{font-size:12px}
-</style></head><body><div id="hud"><div class="pill"><h1>🌼 黎明尋寶小冒險</h1><small>卡通原型・路線非實景比例</small></div><div class="box" id="mission">先到左側巷弄，尋找出發線索！</div><div id="prompt" class="pill">✨ 按空白鍵或「互動」</div><div id="controls"><span></span><button data-k="w">▲</button><span></span><button data-k="a">◀</button><button data-k="s">▼</button><button data-k="d">▶</button></div><button id="action">✨ 互動</button><button id="mutebtn">🔊 音效開</button></div><div id="modal"><div class="card"><h2 id="title">🌼 黎明尋寶小冒險</h2><p id="story">從黎明小聚出發，探索轉彎巷弄，尋找散落在村子裡的回憶星星！
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>黎明尋寶小冒險</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;overflow:hidden;font-family:system-ui,"PingFang TC","Microsoft JhengHei",sans-serif;background:#b8e8e8;color:#334d50}
+canvas{display:block}
+#hud{position:absolute;inset:0;pointer-events:none;padding:14px;display:flex;flex-direction:column;align-items:flex-start;gap:8px}
+.pill,.box{background:#fffdf1ee;border:3px solid #fff;border-radius:20px;padding:9px 14px;box-shadow:0 5px 0 #79aaa480}
+h1{font-size:19px;margin:0}
+#mission{max-width:340px;font-weight:bold;line-height:1.5}
+#stats{font-weight:800;font-size:14px;display:flex;gap:12px;flex-wrap:wrap}
+#prompt{position:absolute;left:50%;bottom:110px;transform:translateX(-50%);text-align:center;display:none;white-space:nowrap;font-weight:800;font-size:17px;background:#fff4b8;border-color:#ffd54a;animation:pop .9s ease-in-out infinite alternate}
+@keyframes pop{from{transform:translateX(-50%) scale(1)}to{transform:translateX(-50%) scale(1.07)}}
+#toast{position:absolute;left:50%;top:22%;transform:translateX(-50%);font-weight:800;font-size:20px;opacity:0;transition:opacity .3s,top .3s;white-space:nowrap}
+#toast.show{opacity:1;top:19%}
+button{pointer-events:auto;border:0;border-radius:16px;background:#ffcc69;color:#604333;font-weight:800;padding:13px 19px;box-shadow:0 4px 0 #d89f47;font-size:16px;cursor:pointer;font-family:inherit}
+button:active{transform:translateY(3px);box-shadow:0 1px 0 #d89f47}
+#controls{position:absolute;bottom:18px;left:18px;display:grid;grid-template-columns:repeat(3,58px);gap:5px;pointer-events:auto;touch-action:none}
+#controls button{padding:13px}
+#action{position:absolute;right:18px;bottom:25px;background:#ff9291;box-shadow:0 4px 0 #d16f73;font-size:18px;padding:16px 22px}
+#action.ready{animation:glow 0.7s ease-in-out infinite alternate}
+@keyframes glow{from{box-shadow:0 4px 0 #d16f73,0 0 0 0 #ffd54a}to{box-shadow:0 4px 0 #d16f73,0 0 0 10px #ffd54a99}}
+#topright{position:absolute;right:14px;top:14px;display:flex;gap:8px}
+#topright button{background:#fffdf1;font-size:14px;padding:9px 12px;box-shadow:0 4px 0 #79aaa480}
+#modal,#viewer{position:absolute;inset:0;background:#183f4699;display:flex;align-items:center;justify-content:center;padding:18px;pointer-events:auto}
+#viewer{display:none;background:#0d2428e6;flex-direction:column;gap:12px}
+#viewer img{max-width:100%;max-height:72vh;border-radius:14px;border:5px solid #fff}
+#viewer .row{display:flex;gap:10px}
+#modal .card{background:#fffdf2;border:5px solid white;border-radius:28px;max-width:500px;width:100%;max-height:92vh;overflow:auto;padding:22px;box-shadow:0 10px 0 #3f7979;text-align:center;line-height:1.7}
+#modal h2{margin:0;color:#df7777}
+#modal p{white-space:pre-line;margin:10px 0}
+#choices{display:flex;flex-direction:column;gap:8px;margin:10px 0}
+#choices button{background:#e6f6f1;box-shadow:0 4px 0 #9fcfc2;color:#2e5a55}
+#choices button.wrong{background:#ffd9d6;animation:shake .4s}
+@keyframes shake{25%{transform:translateX(-8px)}75%{transform:translateX(8px)}}
+#photos{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:10px 0}
+#photos img{width:100%;height:92px;object-fit:cover;border-radius:10px;cursor:zoom-in;border:3px solid #fff;box-shadow:0 2px 6px #0002}
+#photos .lock{height:92px;border-radius:10px;background:#e3ece9;display:flex;align-items:center;justify-content:center;font-size:26px;color:#9bb}
+small{font-size:12px}
+#legend{font-size:12px;line-height:1.6}
+</style>
+</head>
+<body>
+<div id="hud">
+  <div class="pill"><h1>🌼 黎明尋寶小冒險</h1><small>卡通原型・路線非實景比例</small></div>
+  <div class="box" id="mission">跟著地上的金色箭頭，找到第一顆 ⭐ 任務星！</div>
+  <div class="pill" id="stats"><span id="sMission">⭐ 0/5</span><span id="sPhoto">📷 0/13</span><span id="sPetal">🌸 0/20</span></div>
+  <div class="pill" id="legend">⭐ 金圈＝主線任務<br>📷 粉圈＝照片看板<br>💙 藍圈＝小互動</div>
+  <div id="prompt" class="pill"></div>
+  <div id="toast" class="pill"></div>
+  <div id="controls"><span></span><button data-k="w">▲</button><span></span><button data-k="a">◀</button><button data-k="s">▼</button><button data-k="d">▶</button></div>
+  <button id="action">✨ 互動</button>
+  <div id="topright"><button id="albumbtn">📒 相簿</button><button id="mutebtn">🔊 音效開</button></div>
+</div>
+<div id="modal"><div class="card">
+  <h2 id="title">🌼 黎明尋寶小冒險</h2>
+  <p id="story">從黎明小聚出發，探索轉彎巷弄，找回散落在村子裡的回憶！
 
-用方向鍵或 WASD 走路；手機用左下角按鈕。靠近閃亮物件後按空白鍵或互動。
+🎮 方向鍵／WASD 走路，手機用左下角按鈕
+✨ 靠近發光圓圈，按空白鍵或「互動」
 
-路障留有缺口，記得繞路！每個線索都要回答小問題，才能繼續冒險。</p><div id="photos"></div><video id="video" controls playsinline></video><button id="close">出發！</button></div></div>
+⭐ 金色光柱：主線任務（答題解鎖照片）
+📷 粉色圈：路邊照片看板，13 張都能收集
+💙 藍色圈：貓咪、腳踏車、風鈴…都可以玩
+🌸 路上的小花瓣走過去就能撿
+
+🔊 請打開聲音（iPhone 請關掉靜音鍵）</p>
+  <div id="choices"></div>
+  <div id="photos"></div>
+  <button id="close">出發！</button>
+</div></div>
+<div id="viewer"><img id="vimg" alt=""><div class="row"><button id="vprev">◀</button><button id="vclose">關閉</button><button id="vnext">▶</button></div></div>
+
 <script type="module">
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js';
-const scene=new THREE.Scene(); scene.background=new THREE.Color('#bfe8f0');scene.fog=new THREE.Fog('#bfe8f0',32,85);
-const camera=new THREE.PerspectiveCamera(45,innerWidth/innerHeight,.1,150);const renderer=new THREE.WebGLRenderer({antialias:true});renderer.setSize(innerWidth,innerHeight);renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.shadowMap.enabled=true;document.body.prepend(renderer.domElement);
-scene.add(new THREE.HemisphereLight(0xffffff,0x82aa75,2));let sun=new THREE.DirectionalLight(0xffffff,2);sun.position.set(-12,25,15);sun.castShadow=true;sun.shadow.mapSize.set(1024,1024);sun.shadow.camera.left=-35;sun.shadow.camera.right=35;sun.shadow.camera.top=35;sun.shadow.camera.bottom=-35;scene.add(sun);
-const mat=c=>new THREE.MeshStandardMaterial({color:c,roughness:.8});function cube(x,y,z,w,h,d,c){let o=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat(c));o.position.set(x,y,z);o.castShadow=true;o.receiveShadow=true;scene.add(o);return o}function ball(x,y,z,r,c){let o=new THREE.Mesh(new THREE.SphereGeometry(r,16,12),mat(c));o.position.set(x,y,z);o.castShadow=true;scene.add(o);return o}
-cube(0,-.35,-21,45,.5,75,'#a8db95');cube(0,-.05,-21,7,.12,70,'#e8d7ae');for(let z of [3,-7,-16,-27,-38,-44])cube(0,-.035,z,26,.13,4,'#e8d7ae');cube(-9,-.04,-2,4,.13,16,'#e8d7ae');cube(9,-.04,-22,4,.13,24,'#e8d7ae');cube(-9,-.04,-38,4,.13,16,'#e8d7ae');for(let z=8;z>-52;z-=4)cube(0,.025,z,.13,.03,1.4,'#fff5dc');
-function house(x,z,color,sign){cube(x,1.6,z,5,3.2,4,color);let roof=cube(x,3.5,z,5.6,.7,4.5,sign==='黎明小聚'?'#ffffff':'#e9897a');roof.rotation.z=x<0?.07:-.07;cube(x,1,z+2.04,1.1,2,.1,'#a36f5c');cube(x+(x<0?1.55:-1.55),1.9,z+2.05,1.1,.9,.1,'#a4d9e1');if(sign){let cvs=document.createElement('canvas');cvs.width=512;cvs.height=128;let c=cvs.getContext('2d');c.fillStyle='#fff8de';c.fillRect(0,0,512,128);c.fillStyle='#ab6260';c.font='bold 55px sans-serif';c.textAlign='center';c.fillText(sign,256,83);let tex=new THREE.CanvasTexture(cvs);let s=new THREE.Mesh(new THREE.PlaneGeometry(3.8,.95),new THREE.MeshBasicMaterial({map:tex}));s.position.set(x,2.95,z+2.32);scene.add(s)}}
-house(-6,4,'#ffffff','黎明小聚');house(6,-18,'#ffd0c0','伴伴 麵');for(let z=-5;z>-45;z-=10){house(-7,z,'#fff0d0');if(z!==-15)house(8,z,'#d4eddf')}
-// Whimsical foliage and small ambient motions are original game assets.
-const treetops=[],leaves=[],clouds=[],fish=[];
-function tree(x,z){cube(x,.85,z,.38,1.7,.38,'#aa8061');let crown=new THREE.Group();crown.position.set(x,2.2,z);for(let [dx,dy,dz,r,c] of [[0,0,0,1.05,'#81c88a'],[.6,.15,0,.8,'#a3dd94'],[-.55,.1,.05,.75,'#90d29a']]){let o=new THREE.Mesh(new THREE.SphereGeometry(r,12,9),mat(c));o.position.set(dx,dy,dz);o.castShadow=true;crown.add(o)}scene.add(crown);treetops.push(crown);for(let j=0;j<2;j++){let leaf=new THREE.Mesh(new THREE.SphereGeometry(.12,7,5),mat(j?'#edbf72':'#c5d96f'));leaf.scale.set(1.6,.35,.8);scene.add(leaf);leaves.push({mesh:leaf,x,z,phase:Math.random()*6})}}
-for(let z=7;z>-50;z-=7){tree(-11,z);tree(12,z-2)}tree(-9,8);tree(-3,9);
-// Pond by the white house, with tiny animated fish.
-let pond=ball(-8,.04,8,1,'#65cbd1');pond.scale.set(2.3,.08,1.15);for(let j=0;j<3;j++){let f=ball(-8+j*.5,.15,8,.12,j%2?'#f3a06b':'#fff0be');f.scale.set(1.8,.35,.7);fish.push({mesh:f,x:-8,z:8,phase:j*2,r:1})}
-// Canal with stone banks, lotus leaves and water ripples, inspired by the supplied photos.
-cube(0,-.11,-47,25,.15,5,'#73c8c8');for(let z of [-49.7,-44.4])cube(0,.12,z,26,.35,.45,'#b8aa92');for(let x=-11;x<12;x+=2){cube(x,.1,-47,.8,.05,.09,'#d5f8ed');let lily=ball(x,.1,-46.4,1,'#85bc7e');lily.scale.set(.48,.035,.35)}for(let j=0;j<7;j++){let f=ball(-9+j*3,.16,-47,.12,j%2?'#e89f79':'#e7d6a2');f.scale.set(2,.35,.65);fish.push({mesh:f,x:-9+j*3,z:-47,phase:j,r:.7})}
-for(let j=0;j<7;j++){let group=new THREE.Group();for(let [x,y,r] of [[0,0,.7],[.8,.1,.55],[-.7,.05,.5]]){let o=new THREE.Mesh(new THREE.SphereGeometry(r,12,8),mat('#fffaf0'));o.position.set(x,y,0);o.scale.y=.6;group.add(o)}group.position.set(-16+j*5,9+j%3,-4-j*7);scene.add(group);clouds.push(group)}
-// Hand-painted bowl sign: geometry is part of the game, not a copied logo.
-cube(6,3.9,-15.5,2.3,1,.12,'#fff8e4');let bowl=new THREE.Mesh(new THREE.SphereGeometry(.38,16,10,0,Math.PI*2,Math.PI/2,Math.PI/2),mat('#ed8671'));bowl.position.set(6,4,-15.4);scene.add(bowl);for(let x of [5.8,6,6.2])cube(x,4.15,-15.32,.035,.45,.04,'#e6b05e');
-// Hedges block the direct route and create alternating side passages.
-let barriers=[{z:-2,from:-12,to:5},{z:-12,from:-5,to:12},{z:-24,from:-12,to:5},{z:-35,from:-5,to:12}];for(const b of barriers){for(let x=b.from;x<=b.to;x+=1.4)ball(x,.65,b.z,.72,'#79bd78')}
-let player=new THREE.Group();let body=new THREE.Mesh(new THREE.SphereGeometry(.55,16,12),mat('#ffc4ab'));body.position.y=1.05;player.add(body);let head=new THREE.Mesh(new THREE.SphereGeometry(.48,16,12),mat('#ffe4c5'));head.position.y=1.9;player.add(head);let hair=new THREE.Mesh(new THREE.SphereGeometry(.49,16,12,0,Math.PI*2,0,Math.PI*.45),mat('#72524b'));hair.position.y=2;player.add(hair);for(let x of [-.22,.22]){let leg=new THREE.Mesh(new THREE.BoxGeometry(.23,.55,.28),mat('#9f7971'));leg.position.set(x,.3,0);player.add(leg)}scene.add(player);player.position.set(0,0,7);
-const missions=[{x:-7,z:4,title:'🪴 植物巷的秘密',text:'沿路發現綠色的植物與村中小店。\n點照片可以放大。',question:'線索一：植物通常長出什麼？\n1. 葉子　2. 輪胎',answer:'1',next:'繞過第一排綠籬的右側缺口，去尋找下一個線索！'},{x:8,z:-7,title:'📚 巷弄尋寶',text:'找到街角和書本造型的寶物！',question:'線索二：想閱讀故事，可以打開什麼？\n1. 書　2. 石頭',answer:'1',next:'從第二排綠籬的左側缺口繞路，前往伴伴！'},{x:-7,z:-16,title:'🍜 伴伴午餐',text:'找到伴伴了！看看你拍的店面和招牌。',question:'線索三：這家店的名字是？\n1. 伴伴　2. 花花',answer:'1',next:'繞過第三排綠籬右側，尋找水果的秘密！'},{x:8,z:-28,title:'🍈 水果小任務',text:'街角的水果攤藏著一顆回憶星。',question:'線索四：哪一個是水果？\n1. 芭樂　2. 鞋子',answer:'1',next:'穿過第四排綠籬左側缺口，往水邊前進！'},{x:-7,z:-43,title:'🎁 黎明溝寶藏',text:'恭喜走過彎彎的巷弄！來看看水邊與小鳥的照片。\n實際場景與路線仍是示意。',question:'最後一題：照片中水裡有什麼？\n1. 小魚　2. 公車',answer:'1',next:'🎉 任務完成！可以繼續散步。'}];let index=0;let stars=[];for(let m of missions){let g=new THREE.Group();let s=new THREE.Mesh(new THREE.OctahedronGeometry(.65),new THREE.MeshStandardMaterial({color:'#ffce52',emissive:'#e49b24',emissiveIntensity:.55}));g.add(s);g.position.set(m.x,1.25,m.z);scene.add(g);stars.push(g)}
-let keys={};let modal=document.querySelector('#modal'), audio, muted=false;function tone(f=600){if(muted)return;audio ||= new AudioContext();if(audio.state==='suspended')audio.resume();let o=audio.createOscillator(),gain=audio.createGain();o.type='sine';o.frequency.value=f;gain.gain.setValueAtTime(.09,audio.currentTime);gain.gain.exponentialRampToValueAtTime(.001,audio.currentTime+.2);o.connect(gain).connect(audio.destination);o.start();o.stop(audio.currentTime+.2)}function close(){modal.style.display='none';document.querySelector('#video').pause();document.querySelector('#photos').replaceChildren();tone(440)}document.querySelector('#close').onclick=close;document.querySelector('#mutebtn').onclick=e=>{muted=!muted;e.target.textContent=muted?'🔇 音效關':'🔊 音效開';if(!muted)tone()};function interact(){if(modal.style.display!=='none')return;let m=missions[index];if(!m||Math.hypot(player.position.x-m.x,player.position.z-m.z)>2.7)return;let answer=window.prompt(m.question+'\n請輸入 1 或 2：');if(answer===null)return;if(answer.trim()!==m.answer){tone(220);alert('再觀察一下，試試另一個答案！');return}tone(720);setTimeout(()=>tone(960),110);stars[index].visible=false;document.querySelector('#title').textContent=m.title;document.querySelector('#story').textContent=m.text;let gallery=document.querySelector('#photos');gallery.replaceChildren();let groups=[[5,6,13],[8,9],[2,3,10,11],[7],[1,4,12]];for(let n of groups[index]){let a=document.createElement('a');a.href='photos/'+n+'.jpg';a.target='_blank';a.rel='noopener';let im=document.createElement('img');im.src=a.href;im.alt='旅途照片 '+n;a.append(im);gallery.append(a)}document.querySelector('#close').textContent=index===missions.length-1?'繼續散步':'繼續冒險';document.querySelector('#mission').textContent=m.next;index++;modal.style.display='flex'}document.querySelector('#action').onclick=interact;addEventListener('keydown',e=>{keys[e.key.toLowerCase()]=true;if([' ','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.key))e.preventDefault();if(e.key===' ')interact()});addEventListener('keyup',e=>keys[e.key.toLowerCase()]=false);document.querySelectorAll('[data-k]').forEach(b=>{let k=b.dataset.k;b.addEventListener('pointerdown',e=>{e.preventDefault();b.setPointerCapture(e.pointerId);keys[k]=true});for(let event of ['pointerup','pointercancel','lostpointercapture'])b.addEventListener(event,()=>keys[k]=false)});addEventListener('blur',()=>keys={});
-camera.position.set(9,13,23);camera.lookAt(0,0,3);let clock=new THREE.Clock(),elapsed=0;function loop(){requestAnimationFrame(loop);let dt=Math.min(clock.getDelta(),.05);elapsed+=dt;treetops.forEach((t,i)=>{t.rotation.z=Math.sin(elapsed*1.2+i)*.06});leaves.forEach((l,i)=>{let q=(elapsed*.38+l.phase)%4;l.mesh.position.set(l.x+Math.sin(elapsed+i)*.75,3.4-q*.8,l.z+Math.cos(elapsed*.7+i)*.55);l.mesh.rotation.z=elapsed+i});clouds.forEach((c,i)=>{c.position.x+=dt*.22;if(c.position.x>22)c.position.x=-22});fish.forEach(f=>{f.mesh.position.x=f.x+Math.sin(elapsed*.8+f.phase)*f.r;f.mesh.position.z=f.z+Math.cos(elapsed*.8+f.phase)*.3;f.mesh.rotation.y=-elapsed*.8-f.phase});if(modal.style.display==='none'){let x=(keys.d||keys.arrowright?1:0)-(keys.a||keys.arrowleft?1:0),z=(keys.s||keys.arrowdown?1:0)-(keys.w||keys.arrowup?1:0);if(x||z){let l=Math.hypot(x,z);let nx=THREE.MathUtils.clamp(player.position.x+x/l*5*dt,-12,12),nz=THREE.MathUtils.clamp(player.position.z+z/l*5*dt,-48,10);if(!barriers.some(b=>nx>b.from-.55&&nx<b.to+.55&&Math.abs(nz-b.z)<1.05)){player.position.x=nx;player.position.z=nz}player.rotation.y=Math.atan2(x,z)}}camera.position.lerp(new THREE.Vector3(player.position.x+9,13,player.position.z+16),.06);camera.lookAt(player.position.x,0,player.position.z-4);stars.forEach((s,i)=>{s.rotation.y+=dt*2;s.position.y=1.3+Math.sin(performance.now()/350+i)*.2});let m=missions[index];document.querySelector('#prompt').style.display=m&&Math.hypot(player.position.x-m.x,player.position.z-m.z)<2.7?'block':'none';renderer.render(scene,camera)}loop();addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)});
-</script></body></html>
+const $ = s => document.querySelector(s);
+
+/* ================= Scene ================= */
+const scene = new THREE.Scene();
+scene.background = new THREE.Color('#bfe8f0');
+scene.fog = new THREE.Fog('#bfe8f0', 32, 85);
+const camera = new THREE.PerspectiveCamera(45, innerWidth / innerHeight, .1, 150);
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setSize(innerWidth, innerHeight);
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.shadowMap.enabled = true;
+document.body.prepend(renderer.domElement);
+scene.add(new THREE.HemisphereLight(0xffffff, 0x82aa75, 2));
+const sun = new THREE.DirectionalLight(0xffffff, 2);
+sun.position.set(-12, 25, 15); sun.castShadow = true; sun.shadow.mapSize.set(1024, 1024);
+Object.assign(sun.shadow.camera, { left: -35, right: 35, top: 35, bottom: -35 });
+scene.add(sun);
+
+const matCache = {};
+const mat = c => matCache[c] ||= new THREE.MeshStandardMaterial({ color: c, roughness: .8 });
+function cube(x, y, z, w, h, d, c, parent = scene) { const o = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat(c)); o.position.set(x, y, z); o.castShadow = true; o.receiveShadow = true; parent.add(o); return o; }
+function ball(x, y, z, r, c, parent = scene) { const o = new THREE.Mesh(new THREE.SphereGeometry(r, 16, 12), mat(c)); o.position.set(x, y, z); o.castShadow = true; parent.add(o); return o; }
+function cyl(x, y, z, rt, rb, h, c, parent = scene, seg = 14) { const o = new THREE.Mesh(new THREE.CylinderGeometry(rt, rb, h, seg), mat(c)); o.position.set(x, y, z); o.castShadow = true; parent.add(o); return o; }
+
+// ground and paths
+cube(0, -.35, -21, 45, .5, 75, '#a8db95');
+cube(0, -.05, -21, 7, .12, 70, '#e8d7ae');
+for (const z of [3, -7, -16, -27, -38, -44]) cube(0, -.035, z, 26, .13, 4, '#e8d7ae');
+cube(-9, -.04, -2, 4, .13, 16, '#e8d7ae'); cube(9, -.04, -22, 4, .13, 24, '#e8d7ae'); cube(-9, -.04, -38, 4, .13, 16, '#e8d7ae');
+for (let z = 8; z > -52; z -= 4) cube(0, .025, z, .13, .03, 1.4, '#fff5dc');
+const onPath = (x, z) => Math.abs(x) < 3.5 || [3, -7, -16, -27, -38, -44].some(p => Math.abs(z - p) < 2);
+
+function label(text, w = 3.8, color = '#ab6260') {
+  const cvs = document.createElement('canvas'); cvs.width = 512; cvs.height = 128;
+  const c = cvs.getContext('2d'); c.fillStyle = '#fff8de'; c.fillRect(0, 0, 512, 128);
+  c.fillStyle = color; c.font = 'bold 55px sans-serif'; c.textAlign = 'center'; c.fillText(text, 256, 83);
+  return new THREE.Mesh(new THREE.PlaneGeometry(w, w / 4), new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(cvs) }));
+}
+const houseBoxes = [];
+function house(x, z, color, sign, roofC = '#e9897a') {
+  houseBoxes.push({ x, z, w: 5, d: 4 });
+  cube(x, 1.6, z, 5, 3.2, 4, color);
+  const roof = cube(x, 3.5, z, 5.6, .7, 4.5, sign === '黎明小聚' ? '#ffffff' : roofC); roof.rotation.z = x < 0 ? .07 : -.07;
+  cube(x, 1, z + 2.04, 1.1, 2, .1, '#a36f5c'); cube(x + (x < 0 ? 1.55 : -1.55), 1.9, z + 2.05, 1.1, .9, .1, '#a4d9e1');
+  if (sign) { const s = label(sign); s.position.set(x, 2.95, z + 2.32); scene.add(s); }
+}
+house(-6, 4, '#ffffff', '黎明小聚'); house(6, -18, '#ffd0c0', '伴伴 麵');
+const roofs = ['#e9897a', '#7fb3d5', '#f2b45a', '#9cc58a', '#c99ad6'];
+let hi = 0;
+for (let z = -5; z > -40; z -= 10) { if (z !== -35) house(-7, z, ['#fff0d0', '#fde2e4', '#e8f0ff'][hi % 3], null, roofs[hi++ % 5]); if (z !== -15 && z !== -25) house(8, z, ['#d4eddf', '#fff4c9', '#ffe1cf'][hi % 3], null, roofs[hi++ % 5]); }
+
+// foliage & ambient motion
+const treetops = [], leaves = [], clouds = [], fish = [];
+function tree(x, z) {
+  cube(x, .85, z, .38, 1.7, .38, '#aa8061');
+  const crown = new THREE.Group(); crown.position.set(x, 2.2, z);
+  for (const [dx, dy, dz, r, c] of [[0, 0, 0, 1.05, '#81c88a'], [.6, .15, 0, .8, '#a3dd94'], [-.55, .1, .05, .75, '#90d29a']]) ball(dx, dy, dz, r, c, crown);
+  scene.add(crown); treetops.push(crown);
+  for (let j = 0; j < 2; j++) { const leaf = ball(0, 0, 0, .12, j ? '#edbf72' : '#c5d96f'); leaf.scale.set(1.6, .35, .8); leaves.push({ mesh: leaf, x, z, phase: Math.random() * 6 }); }
+}
+for (let z = 7; z > -50; z -= 7) { tree(-11, z); tree(12, z - 2); }
+tree(-9, 8); tree(1.5, 10.5);
+
+// pond with fish
+const pond = ball(-8, .04, 8, 1, '#65cbd1'); pond.scale.set(2.3, .08, 1.15);
+for (let j = 0; j < 3; j++) { const f = ball(-8 + j * .5, .15, 8, .12, j % 2 ? '#f3a06b' : '#fff0be'); f.scale.set(1.8, .35, .7); fish.push({ mesh: f, x: -8, z: 8, phase: j * 2, r: 1, speed: .8 }); }
+// canal
+cube(0, -.11, -47, 25, .15, 5, '#73c8c8');
+for (const z of [-49.7, -44.4]) cube(0, .12, z, 26, .35, .45, '#b8aa92');
+for (let x = -11; x < 12; x += 2) { cube(x, .1, -47, .8, .05, .09, '#d5f8ed'); const lily = ball(x, .1, -46.4, 1, '#85bc7e'); lily.scale.set(.48, .035, .35); }
+for (let j = 0; j < 7; j++) { const f = ball(-9 + j * 3, .16, -47, .12, j % 2 ? '#e89f79' : '#e7d6a2'); f.scale.set(2, .35, .65); fish.push({ mesh: f, x: -9 + j * 3, z: -47, phase: j, r: .7, speed: .8 }); }
+for (let j = 0; j < 7; j++) {
+  const g = new THREE.Group();
+  for (const [x, y, r] of [[0, 0, .7], [.8, .1, .55], [-.7, .05, .5]]) { const o = ball(x, y, 0, r, '#fffaf0', g); o.scale.y = .6; }
+  g.position.set(-16 + j * 5, 9 + j % 3, -4 - j * 7); scene.add(g); clouds.push(g);
+}
+// noodle-shop bowl sign
+cube(6, 3.9, -15.5, 2.3, 1, .12, '#fff8e4');
+const bowl = new THREE.Mesh(new THREE.SphereGeometry(.38, 16, 10, 0, Math.PI * 2, Math.PI / 2, Math.PI / 2), mat('#ed8671')); bowl.position.set(6, 4, -15.4); scene.add(bowl);
+for (const x of [5.8, 6, 6.2]) cube(x, 4.15, -15.32, .035, .45, .04, '#e6b05e');
+
+/* ================= Varied obstacles ================= */
+// Each row blocks the road and leaves one side gap; every row uses a different kind of obstacle.
+const barriers = [
+  { z: -2, from: -12, to: 5, kind: 'pots' },     // potted fig plants
+  { z: -12, from: -5, to: 12, kind: 'fence' },   // wooden picket fence
+  { z: -24, from: -12, to: 5, kind: 'shrubs' },  // red-orange photinia hedge
+  { z: -35, from: -5, to: 12, kind: 'crates' },  // brick wall + fruit crates
+];
+function buildBarrier(b) {
+  const len = b.to - b.from;
+  if (b.kind === 'pots') {
+    for (let x = b.from; x <= b.to; x += 1.3) {
+      const s = .8 + ((x * 7) % 3) * .12;
+      cyl(x, .35 * s, b.z, .45 * s, .32 * s, .7 * s, ['#d27d55', '#c96b4a', '#e09a6b'][Math.abs(Math.round(x)) % 3]);
+      for (let k = 0; k < 4; k++) { const l = ball(x + Math.cos(k * 1.6) * .3, .9 * s + k * .12, b.z + Math.sin(k * 1.6) * .25, .32, k % 2 ? '#6fae5f' : '#88c46e'); l.scale.set(1.3, .45, 1); l.rotation.z = k; }
+    }
+  } else if (b.kind === 'fence') {
+    for (let x = b.from; x <= b.to; x += .55) { const p = cube(x, .6, b.z, .22, 1.2, .12, '#f3e3c3'); const tip = cube(x, 1.25, b.z, .16, .16, .12, '#f3e3c3'); tip.rotation.z = Math.PI / 4; }
+    for (const y of [.4, .9]) cube(b.from + len / 2, y, b.z - .08, len + .3, .12, .06, '#c99f73');
+    for (let x = b.from + 2; x < b.to; x += 4.5) { const f = ball(x, .25, b.z + .35, .28, ['#ff9bb3', '#ffd166', '#b5a1ff'][Math.round(x) % 3]); f.scale.y = .7; }
+  } else if (b.kind === 'shrubs') {
+    cube(b.from + len / 2, .25, b.z, len + .6, .5, 1.3, '#bba48a');
+    for (let x = b.from; x <= b.to; x += .9) {
+      const top = ['#e8643f', '#f08a3c', '#c9e06a', '#de4b3a'][Math.abs(Math.round(x * 3)) % 4];
+      ball(x, .85, b.z, .55, '#5f9c4f'); ball(x + .2, 1.2, b.z + .1, .38, top);
+    }
+  } else if (b.kind === 'crates') {
+    cube(b.from + len / 2, .45, b.z - .3, len + .4, .9, .5, '#cf8a64');
+    for (let x = b.from; x <= b.to; x += 1) for (let y = .2; y < .9; y += .3) cube(x + (y * 10 % 2 ? .25 : -.25), y, b.z - .04, .45, .03, .02, '#e8b293');
+    for (let x = b.from + .5; x <= b.to; x += 1.6) {
+      cube(x, .35, b.z + .35, .9, .7, .7, '#d9b07b');
+      const fc = ['#f6c344', '#9bd36b', '#ff8f6b'][Math.abs(Math.round(x)) % 3];
+      for (let k = 0; k < 3; k++) ball(x - .25 + k * .25, .78, b.z + .35, .17, fc);
+    }
+  }
+}
+barriers.forEach(buildBarrier);
+
+// round obstacles: traffic cones, bench, lamp posts, rocks (circle colliders)
+const colliders = [];
+function cone(x, z) { cyl(x, .35, z, .05, .28, .7, '#ff8a3d'); cyl(x, .4, z, .17, .2, .1, '#ffffff'); cube(x, .03, z, .6, .06, .6, '#ff8a3d'); colliders.push({ x, z, r: .4 }); }
+cone(.8, -7.2); cone(-.6, -7.6); cone(1.6, -30.5);
+function bench(x, z) { cube(x, .45, z, 1.6, .12, .55, '#b98455'); cube(x, .8, z - .25, 1.6, .4, .08, '#b98455'); for (const dx of [-.65, .65]) cube(x + dx, .22, z, .1, .45, .5, '#6e5a4a'); colliders.push({ x, z, r: .9 }); }
+bench(-1.8, -19.5); bench(4.5, -38.5);
+function lamp(x, z) { cyl(x, 1.4, z, .07, .1, 2.8, '#5f6b6d'); ball(x, 2.9, z, .25, '#fff3b0'); colliders.push({ x, z, r: .3 }); }
+for (const [x, z] of [[-3.3, 4], [3.3, -9.5], [-3.3, -26], [3.3, -33], [-3.3, -40]]) lamp(x, z);
+function rock(x, z, s) { const r = ball(x, .2 * s, z, .5 * s, '#a9a49b'); r.scale.y = .6; colliders.push({ x, z, r: .5 * s }); }
+rock(1, -22.6, 1); rock(-5.5, -19.5, .8);
+
+/* ================= Player ================= */
+const player = new THREE.Group();
+const body = ball(0, 1.05, 0, .55, '#ffc4ab', player);
+const head = ball(0, 1.9, 0, .48, '#ffe4c5', player);
+const hair = new THREE.Mesh(new THREE.SphereGeometry(.49, 16, 12, 0, Math.PI * 2, 0, Math.PI * .45), mat('#72524b')); hair.position.y = 2; player.add(hair);
+for (const x of [-.17, .17]) ball(x, 1.95, .43, .055, '#3b2b28', player);
+const legs = [-.22, .22].map(x => { const pivot = new THREE.Group(); pivot.position.set(x, .58, 0); const leg = cube(0, -.28, 0, .23, .55, .28, '#9f7971', pivot); player.add(pivot); return pivot; });
+scene.add(player); player.position.set(0, 0, 7);
+
+// ground arrow that points toward the next mission
+const arrowShape = new THREE.Shape(); arrowShape.moveTo(0, .55); arrowShape.lineTo(.4, 0); arrowShape.lineTo(.15, 0); arrowShape.lineTo(.15, -.4); arrowShape.lineTo(-.15, -.4); arrowShape.lineTo(-.15, 0); arrowShape.lineTo(-.4, 0);
+const guide = new THREE.Mesh(new THREE.ShapeGeometry(arrowShape), new THREE.MeshBasicMaterial({ color: '#ffc531', transparent: true, opacity: .9, side: THREE.DoubleSide }));
+guide.rotation.x = -Math.PI / 2; const guideHolder = new THREE.Group(); guideHolder.add(guide); guide.position.set(0, .08, -1.4); scene.add(guideHolder);
+
+/* ================= Marker helpers ================= */
+function emojiSprite(emoji, ring = '#ffffff', size = 1.1) {
+  const cvs = document.createElement('canvas'); cvs.width = cvs.height = 128; const c = cvs.getContext('2d');
+  c.fillStyle = '#ffffff'; c.beginPath(); c.arc(64, 64, 56, 0, Math.PI * 2); c.fill();
+  c.lineWidth = 9; c.strokeStyle = ring; c.stroke();
+  c.font = '64px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(emoji, 64, 70);
+  const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(cvs), depthTest: false }));
+  sp.scale.set(size, size, 1); sp.renderOrder = 10; scene.add(sp); return sp;
+}
+function groundRing(x, z, r, color) {
+  const m = new THREE.Mesh(new THREE.RingGeometry(r * .78, r, 40), new THREE.MeshBasicMaterial({ color, transparent: true, opacity: .75, side: THREE.DoubleSide, depthWrite: false }));
+  m.rotation.x = -Math.PI / 2; m.position.set(x, .07, z); scene.add(m); return m;
+}
+const COLORS = { mission: '#ffc531', photo: '#ff7fae', side: '#47b8ff' };
+
+/* ================= Particles ================= */
+const particles = [];
+function burst(x, y, z, colors, n = 18, up = 4, shape = 'ball') {
+  for (let i = 0; i < n; i++) {
+    const c = colors[i % colors.length];
+    const m = shape === 'box' ? cube(x, y, z, .14, .14, .04, c) : ball(x, y, z, .09, c);
+    m.castShadow = false;
+    particles.push({ m, vx: (Math.random() - .5) * 4, vy: up * (.5 + Math.random() * .7), vz: (Math.random() - .5) * 4, life: 1.2 + Math.random() * .6 });
+  }
+}
+
+/* ================= Audio ================= */
+const A = { ctx: null, master: null, music: null, water: null, muted: false, nextNote: 0, step: 0 };
+function silentWavURL() { // makes iOS play WebAudio even when the ringer switch is silent
+  const n = 800, buf = new ArrayBuffer(44 + n), v = new DataView(buf), w = (o, s) => [...s].forEach((ch, i) => v.setUint8(o + i, ch.charCodeAt(0)));
+  w(0, 'RIFF'); v.setUint32(4, 36 + n, true); w(8, 'WAVEfmt '); v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true);
+  v.setUint32(24, 8000, true); v.setUint32(28, 8000, true); v.setUint16(32, 1, true); v.setUint16(34, 8, true); w(36, 'data'); v.setUint32(40, n, true);
+  for (let i = 0; i < n; i++) v.setUint8(44 + i, 128);
+  return URL.createObjectURL(new Blob([buf], { type: 'audio/wav' }));
+}
+function initAudio() {
+  try { if (navigator.audioSession) navigator.audioSession.type = 'playback'; } catch (e) {}
+  if (!A.ctx) {
+    const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return;
+    A.ctx = new AC();
+    A.master = A.ctx.createGain(); A.master.gain.value = A.muted ? 0 : 1;
+    const comp = A.ctx.createDynamicsCompressor(); A.master.connect(comp).connect(A.ctx.destination);
+    A.music = A.ctx.createGain(); A.music.gain.value = .5; A.music.connect(A.master);
+    const len = A.ctx.sampleRate; A.noise = A.ctx.createBuffer(1, len, A.ctx.sampleRate);
+    const d = A.noise.getChannelData(0); for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
+    // looping water ambience, volume follows distance to pond / canal
+    const src = A.ctx.createBufferSource(); src.buffer = A.noise; src.loop = true;
+    const lp = A.ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 650;
+    A.water = A.ctx.createGain(); A.water.gain.value = 0; src.connect(lp).connect(A.water).connect(A.master); src.start();
+    A.nextNote = A.ctx.currentTime + .2;
+    A.silent = new Audio(silentWavURL()); A.silent.loop = true;
+  }
+  if (A.ctx.state !== 'running') A.ctx.resume();
+  A.silent?.play().catch(() => {});
+}
+addEventListener('pointerdown', initAudio); addEventListener('keydown', initAudio); addEventListener('touchend', initAudio);
+function tone(freq, dur = .2, type = 'sine', vol = .1, slide = null, when = 0, dest = null) {
+  if (!A.ctx || A.muted) return;
+  const t = A.ctx.currentTime + when, o = A.ctx.createOscillator(), g = A.ctx.createGain();
+  o.type = type; o.frequency.setValueAtTime(freq, t); if (slide) o.frequency.exponentialRampToValueAtTime(slide, t + dur);
+  g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + .01); g.gain.exponentialRampToValueAtTime(.0001, t + dur);
+  o.connect(g).connect(dest || A.master); o.start(t); o.stop(t + dur + .05);
+}
+function noise(dur = .1, freq = 1200, q = 1, vol = .3, type = 'bandpass', when = 0, sweepTo = null) {
+  if (!A.ctx || A.muted) return;
+  const t = A.ctx.currentTime + when, s = A.ctx.createBufferSource(), f = A.ctx.createBiquadFilter(), g = A.ctx.createGain();
+  s.buffer = A.noise; f.type = type; f.frequency.setValueAtTime(freq, t); f.Q.value = q; if (sweepTo) f.frequency.exponentialRampToValueAtTime(sweepTo, t + dur);
+  g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(.0001, t + dur);
+  s.connect(f).connect(g).connect(A.master); s.start(t, Math.random() * .5); s.stop(t + dur + .05);
+}
+const sfx = {
+  step(path) { A.step ^= 1; const p = A.step ? 1 : .88; if (path) { noise(.06, 2400 * p, 1.5, .5); tone(110 * p, .05, 'sine', .12); } else { noise(.09, 900 * p, .8, .45); } },
+  bump() { tone(180, .15, 'sine', .25, 90); noise(.08, 400, 1, .3); },
+  petal() { tone(1320, .1, 'triangle', .12); tone(1980, .14, 'triangle', .1, null, .07); },
+  open() { tone(523, .15, 'triangle', .12); tone(784, .2, 'triangle', .12, null, .08); },
+  close() { tone(660, .12, 'triangle', .08, 440); },
+  correct() { [523, 659, 784, 1047].forEach((f, i) => tone(f, .3, 'triangle', .14, null, i * .1)); },
+  wrong() { tone(220, .3, 'sawtooth', .07, 150); },
+  camera() { noise(.03, 5000, 1, .5, 'highpass'); noise(.06, 2500, 2, .35, 'bandpass', .07); },
+  meow() { if (!A.ctx || A.muted) return; const t = A.ctx.currentTime, o = A.ctx.createOscillator(), f = A.ctx.createBiquadFilter(), g = A.ctx.createGain();
+    o.type = 'sawtooth'; o.frequency.setValueAtTime(480, t); o.frequency.linearRampToValueAtTime(820, t + .18); o.frequency.linearRampToValueAtTime(430, t + .55);
+    f.type = 'bandpass'; f.frequency.setValueAtTime(900, t); f.frequency.linearRampToValueAtTime(1800, t + .2); f.frequency.linearRampToValueAtTime(700, t + .55); f.Q.value = 3;
+    g.gain.setValueAtTime(.0001, t); g.gain.exponentialRampToValueAtTime(.35, t + .05); g.gain.exponentialRampToValueAtTime(.0001, t + .6);
+    o.connect(f).connect(g).connect(A.master); o.start(t); o.stop(t + .65); },
+  bell() { [1320, 1980, 2640, 1760].forEach((f, i) => tone(f, 1.6, 'sine', .07, null, i * .18)); },
+  bike() { tone(2100, .25, 'sine', .12); tone(2100, .25, 'sine', .12, null, .18); },
+  splash() { noise(.5, 3000, 1, .5, 'lowpass', 0, 300); tone(300, .15, 'sine', .1, 900, .05); },
+  chirp(v = .06) { for (let i = 0; i < 3; i++) tone(2600 + Math.random() * 600, .08, 'sine', v, 4200, i * .12); },
+  sniff() { noise(.25, 3500, 2, .25, 'bandpass', 0, 5000); tone(880, .5, 'triangle', .06, 1320, .2); },
+  mail() { noise(.08, 800, 1, .4); tone(392, .2, 'triangle', .1, null, .1); tone(523, .3, 'triangle', .1, null, .25); },
+  fanfare() { [523, 659, 784, 1047, 784, 1047, 1319].forEach((f, i) => tone(f, .35, 'square', .05, null, i * .13)); },
+};
+// gentle music-box background loop (original melody)
+const melody = [523, 659, 784, 659, 880, 784, 659, 587, 523, 587, 659, 784, 659, 587, 523, 0];
+const bassline = [131, 131, 175, 175, 196, 196, 131, 131];
+let melodyIdx = 0;
+function scheduleMusic() {
+  if (!A.ctx || A.muted || A.ctx.state !== 'running') return;
+  while (A.nextNote < A.ctx.currentTime + .4) {
+    const when = A.nextNote - A.ctx.currentTime, n = melody[melodyIdx % melody.length];
+    if (n) tone(n, .5, 'triangle', .045, null, Math.max(0, when), A.music);
+    if (melodyIdx % 2 === 0) tone(bassline[(melodyIdx / 2) % bassline.length], .7, 'sine', .05, null, Math.max(0, when), A.music);
+    melodyIdx++; A.nextNote += .38;
+  }
+}
+let birdTimer = 3;
+
+/* ================= UI helpers ================= */
+const modal = $('#modal'), photosEl = $('#photos'), choicesEl = $('#choices');
+let onClose = null;
+const isOpen = () => modal.style.display !== 'none' || $('#viewer').style.display === 'flex';
+function openCard({ title, text, photos = [], choices = null, button = '好的', after = null }) {
+  $('#title').textContent = title; $('#story').textContent = text; choicesEl.replaceChildren(); photosEl.replaceChildren();
+  showPhotos(photos);
+  if (choices) for (const ch of choices) { const b = document.createElement('button'); b.textContent = ch.text; b.onclick = () => ch.pick(b); choicesEl.append(b); }
+  $('#close').textContent = button; $('#close').style.display = choices ? 'none' : ''; onClose = after;
+  modal.style.display = 'flex'; sfx.open();
+}
+function showPhotos(list, lockedTotal = 0) {
+  photosEl.replaceChildren();
+  for (const n of list) {
+    if (n === null) { const d = document.createElement('div'); d.className = 'lock'; d.textContent = '❔'; photosEl.append(d); continue; }
+    const im = document.createElement('img'); im.src = 'photos/' + n + '.jpg'; im.alt = '旅途照片 ' + n; im.onclick = () => openViewer(list.filter(v => v !== null), n); photosEl.append(im);
+  }
+}
+function closeCard() { modal.style.display = 'none'; sfx.close(); const f = onClose; onClose = null; f && f(); }
+$('#close').onclick = closeCard;
+let vList = [], vIdx = 0;
+function openViewer(list, n) { vList = list; vIdx = list.indexOf(n); $('#vimg').src = 'photos/' + n + '.jpg'; $('#viewer').style.display = 'flex'; sfx.camera(); }
+function stepViewer(d) { vIdx = (vIdx + d + vList.length) % vList.length; $('#vimg').src = 'photos/' + vList[vIdx] + '.jpg'; sfx.petal(); }
+$('#vprev').onclick = () => stepViewer(-1); $('#vnext').onclick = () => stepViewer(1); $('#vclose').onclick = () => { $('#viewer').style.display = 'none'; sfx.close(); };
+let toastT = 0;
+function toast(msg) { const t = $('#toast'); t.textContent = msg; t.classList.add('show'); toastT = 2.2; }
+function updateStats() {
+  $('#sMission').textContent = `⭐ ${missionIdx}/${missions.length}`;
+  $('#sPhoto').textContent = `📷 ${seenPhotos.size}/13`;
+  $('#sPetal').textContent = `🌸 ${petalCount}/${petals.length}`;
+}
+$('#mutebtn').onclick = e => { initAudio(); A.muted = !A.muted; if (A.master) A.master.gain.value = A.muted ? 0 : 1; e.target.textContent = A.muted ? '🔇 音效關' : '🔊 音效開'; if (!A.muted) { A.nextNote = A.ctx.currentTime + .1; sfx.open(); } };
+$('#albumbtn').onclick = () => {
+  if (isOpen()) return;
+  const all = []; for (let n = 1; n <= 13; n++) all.push(seenPhotos.has(n) ? n : null);
+  openCard({ title: '📒 回憶相簿', text: `已收集 ${seenPhotos.size} / 13 張照片\n找路邊的 📷 粉色看板和 ⭐ 任務就能解鎖！點照片可以放大。`, photos: all, button: '關閉' });
+};
+
+/* ================= Interactables ================= */
+const interactables = [];
+function addInteractable(o) {
+  o.ring = groundRing(o.x, o.z, o.r * .7, COLORS[o.type]);
+  o.icon = emojiSprite(o.emoji, COLORS[o.type], o.type === 'mission' ? 1.3 : 1);
+  o.iconY = o.iconY || (o.type === 'mission' ? 3.3 : 2.4);
+  o.icon.position.set(o.x, o.iconY, o.z);
+  interactables.push(o); return o;
+}
+
+// --- photo boards: all 13 photos stand along the road ---
+const seenPhotos = new Set();
+const loader = new THREE.TextureLoader();
+const photoSpots = [[5, -2.6, 5.5], [6, 2.6, 1.5], [13, -2.6, .8], [8, -2.6, -4.5], [9, 2.6, -8], [2, -2.6, -14], [3, -2.6, -17.5], [10, 2.6, -20.8], [11, -2.6, -21.8], [7, 2.6, -29.5], [1, -2.6, -37.8], [4, 2.6, -41.5], [12, -2.6, -42.2]];
+for (const [n, x, z] of photoSpots) {
+  const g = new THREE.Group(); g.position.set(x, 0, z); g.rotation.y = x < 0 ? .5 : -.5; scene.add(g);
+  for (const dx of [-.5, .5]) cube(dx, .75, -.05, .08, 1.5, .08, '#8a6248', g);
+  cube(0, 1.75, -.02, 1.35, 1.75, .08, '#ffffff', g);
+  const tex = loader.load('photos/' + n + '.jpg'); tex.colorSpace = THREE.SRGBColorSpace;
+  const pic = new THREE.Mesh(new THREE.PlaneGeometry(1.2, 1.6), new THREE.MeshBasicMaterial({ map: tex })); pic.position.set(0, 1.75, .03); g.add(pic);
+  addInteractable({ type: 'photo', x, z, r: 1.9, emoji: '📷', iconY: 3.15, label: '📷 看照片', photo: n,
+    action() { const first = !seenPhotos.has(n); seenPhotos.add(n); updateStats(); sfx.camera(); if (first) { toast('📷 收集到新照片！'); burst(x, 2, z, ['#ff7fae', '#ffd1e0', '#ffffff'], 14, 3, 'box'); } openViewer([...seenPhotos].sort((a, b) => a - b), n); this.done = true; } });
+}
+
+// --- side interactions ---
+// cat
+const cat = new THREE.Group(); cat.position.set(3, 0, 5.5); scene.add(cat);
+const catBody = ball(0, .35, 0, .38, '#f2a65a', cat); catBody.scale.set(1.3, .9, .9);
+const catHead = ball(.42, .68, 0, .26, '#f2a65a', cat);
+for (const dz of [-.13, .13]) { const ear = new THREE.Mesh(new THREE.ConeGeometry(.08, .16, 4), mat('#e08a3f')); ear.position.set(.45, .92, dz); cat.add(ear); }
+const catTail = cube(-.5, .55, 0, .08, .5, .08, '#e08a3f', cat); catTail.rotation.z = .5;
+let catJump = 0;
+addInteractable({ type: 'side', x: 3, z: 5.5, r: 2.2, emoji: '🐱', label: '🐱 摸摸貓咪', action() { sfx.meow(); catJump = 1; burst(3, 1.2, 5.5, ['#ff8fb1', '#ff5e8e'], 10, 3); toast('喵～貓咪很開心！'); } });
+// pond feeding
+let feedTime = 0;
+addInteractable({ type: 'side', x: -8, z: 8, r: 3.2, emoji: '🐟', label: '🐟 餵小魚', iconY: 1.6, action() { sfx.splash(); feedTime = 4; burst(-8, .4, 8, ['#bfefff', '#ffffff', '#e6c27a'], 16, 2.5); toast('小魚游過來吃飼料了！'); } });
+// flower bed to smell
+const flowerBed = new THREE.Group(); flowerBed.position.set(-3.9, 0, -9.8); scene.add(flowerBed);
+cube(0, .15, 0, 1.8, .3, 1, '#a77a58', flowerBed);
+const blooms = []; for (let i = 0; i < 7; i++) { const b = ball(-.7 + (i % 4) * .45, .5, -.25 + Math.floor(i / 4) * .5, .16, ['#ff7fae', '#ffd166', '#c39bff', '#ff9a6b'][i % 4], flowerBed); blooms.push(b); }
+addInteractable({ type: 'side', x: -3.9, z: -9.8, r: 2.2, emoji: '🌷', label: '🌷 聞聞花香', action() { sfx.sniff(); burst(-3.9, .8, -9.8, ['#ff7fae', '#ffd166', '#c39bff'], 18, 3, 'box'); toast('好香～花瓣飛起來了！'); } });
+// bicycle
+const bike = new THREE.Group(); bike.position.set(4.5, 0, -4.5); bike.rotation.y = .4; scene.add(bike);
+const wheels = [];
+for (const dx of [-.55, .55]) { const w = new THREE.Mesh(new THREE.TorusGeometry(.38, .05, 8, 24), mat('#333')); w.position.set(dx, .4, 0); bike.add(w); wheels.push(w); }
+cube(0, .65, 0, 1.1, .07, .07, '#3fa7a0', bike); cube(-.25, .85, 0, .3, .07, .25, '#5a3a2e', bike); cube(.5, 1.0, 0, .07, .07, .5, '#555', bike); cube(.45, .7, 0, .07, .6, .07, '#3fa7a0', bike);
+let wheelSpin = 0;
+colliders.push({ x: 4.5, z: -4.5, r: .7 });
+addInteractable({ type: 'side', x: 4.5, z: -4.5, r: 2.2, emoji: '🚲', label: '🚲 按車鈴', action() { sfx.bike(); wheelSpin = 2.5; toast('叮鈴叮鈴！'); } });
+// wind chime at the noodle shop
+const chime = new THREE.Group(); chime.position.set(2.9, 2.6, -16.6); scene.add(chime);
+cube(0, .45, 0, .6, .05, .05, '#8a6248', chime);
+const chimeRods = [-.22, -.07, .07, .22].map((x, i) => { const r = cyl(x, .1 - i * .05, 0, .03, .03, .5 + i * .1, '#bfe3ef', chime); return r; });
+cyl(2.9, 1.3, -16.6, .05, .05, 2.6, '#8a6248');
+let chimeSwing = 0;
+addInteractable({ type: 'side', x: 2.9, z: -16.6, r: 2, emoji: '🎐', label: '🎐 搖風鈴', iconY: 3.8, action() { sfx.bell(); chimeSwing = 3; toast('叮～叮～清脆的風鈴聲'); } });
+// mailbox
+const mailbox = new THREE.Group(); mailbox.position.set(-4.6, 0, -28.5); scene.add(mailbox);
+cyl(0, .5, 0, .06, .06, 1, '#555', mailbox); cube(0, 1.25, 0, .55, .5, .7, '#e85d5d', mailbox);
+const flag = cube(.3, 1.4, .1, .04, .3, .12, '#ffd54a', mailbox);
+let flagUp = 0;
+colliders.push({ x: -4.6, z: -28.5, r: .5 });
+addInteractable({ type: 'side', x: -4.6, z: -28.5, r: 2.2, emoji: '💌', label: '💌 打開信箱', action() { sfx.mail(); flagUp = 1;
+  openCard({ title: '💌 給旅人的明信片', text: '謝謝你一路散步到這裡！\n巷弄裡的植物、書本、麵店和溪水，\n都是這趟旅程留下的小回憶。\n\n記得抬頭看看雲，也聽聽水聲 🌤️', photos: [8, 1], button: '收好明信片' }); } });
+// bird on the canal wall
+const bird = new THREE.Group(); bird.position.set(5, .45, -44.4); scene.add(bird);
+const birdBody = ball(0, .2, 0, .22, '#7fb6e6', bird); birdBody.scale.set(1.3, 1, 1); ball(.22, .35, 0, .14, '#7fb6e6', bird);
+const beak = new THREE.Mesh(new THREE.ConeGeometry(.05, .14, 6), mat('#ffb347')); beak.rotation.z = -Math.PI / 2; beak.position.set(.38, .35, 0); bird.add(beak);
+let birdFly = 0;
+addInteractable({ type: 'side', x: 5, z: -43.6, r: 2.2, emoji: '🐦', label: '🐦 跟小鳥打招呼', action() { sfx.chirp(.15); birdFly = 3; toast('小鳥啾啾地飛了一圈！'); } });
+
+// puddle: splash automatically when you walk through it
+const puddle = ball(-.8, .02, -31.5, 1, '#8fd3e0'); puddle.scale.set(1.1, .03, .7);
+let inPuddle = false;
+
+// --- main missions (quiz with buttons, unlock photos) ---
+const missions = [
+  { x: -4.5, z: 8.2, title: '🪴 植物巷的秘密', text: '沿路發現綠色的植物與村中小店。', q: '線索一：植物通常長出什麼？', opts: ['🍃 葉子', '🛞 輪胎', '🧦 襪子'], a: 0, photos: [5, 6, 13], next: '盆栽擋住了路！從右邊的缺口繞過去，找下一顆 ⭐' },
+  { x: 6.5, z: -9.5, title: '📚 巷弄尋寶', text: '找到街角和書本造型的寶物！', q: '線索二：想閱讀故事，可以打開什麼？', opts: ['🪨 石頭', '📖 書', '🥄 湯匙'], a: 1, photos: [8, 9], next: '伴伴麵就在籬笆後面！從左邊缺口繞過木頭籬笆，再走回右邊的麵店。' },
+  { x: 6, z: -14.3, title: '🍜 伴伴午餐', text: '找到伴伴了！看看你拍的店面和招牌。', q: '線索三：這家店的名字是？', opts: ['🌸 花花', '🐻 熊熊', '🍜 伴伴'], a: 2, photos: [2, 3, 10, 11], next: '紅葉樹叢擋路，從右邊繞過去，找水果攤！' },
+  { x: 8, z: -29, title: '🍈 水果小任務', text: '街角的水果攤藏著一顆回憶星。', q: '線索四：哪一個是水果？', opts: ['👟 鞋子', '🍈 芭樂', '☂️ 雨傘'], a: 1, photos: [7], next: '磚牆和水果箱擋路，從左邊繞過去，往水邊前進！' },
+  { x: -7, z: -42, title: '🎁 黎明溝寶藏', text: '恭喜走過彎彎的巷弄！來看看水邊與小鳥的照片。\n實際場景與路線仍是示意。', q: '最後一題：照片中水裡有什麼？', opts: ['🚌 公車', '🐟 小魚', '🎹 鋼琴'], a: 1, photos: [1, 4, 12], next: '🎉 任務完成！繼續散步，收集所有照片和花瓣吧！' },
+];
+let missionIdx = 0;
+const beamMat = new THREE.MeshBasicMaterial({ color: '#ffd54a', transparent: true, opacity: .28, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide });
+missions.forEach((m, i) => {
+  const star = new THREE.Mesh(new THREE.OctahedronGeometry(.65), new THREE.MeshStandardMaterial({ color: '#ffce52', emissive: '#e49b24', emissiveIntensity: .6 }));
+  star.position.set(m.x, 1.3, m.z); scene.add(star);
+  const beam = new THREE.Mesh(new THREE.CylinderGeometry(.6, 1, 14, 20, 1, true), beamMat); beam.position.set(m.x, 7, m.z); scene.add(beam);
+  const it = addInteractable({ type: 'mission', x: m.x, z: m.z, r: 2.8, emoji: '❗', label: '⭐ 解開線索', star, beam, mission: i, action() { askMission(i); } });
+  m.it = it;
+});
+function setMissionVisibility() {
+  missions.forEach((m, i) => { const active = i === missionIdx; m.it.star.visible = m.it.beam.visible = m.it.ring.visible = m.it.icon.visible = active; m.it.disabled = !active; });
+}
+function askMission(i) {
+  const m = missions[i]; let tries = 0;
+  openCard({ title: m.title, text: m.text + '\n\n' + m.q, choices: m.opts.map((t, k) => ({ text: t, pick(btn) {
+    if (k !== m.a) { tries++; sfx.wrong(); btn.classList.remove('wrong'); void btn.offsetWidth; btn.classList.add('wrong'); btn.disabled = true; $('#story').textContent = m.text + '\n\n' + m.q + '\n\n🤔 再觀察一下，試試別的答案！'; return; }
+    sfx.correct(); m.photos.forEach(n => seenPhotos.add(n)); burst(m.x, 1.5, m.z, ['#ffce52', '#ff9291', '#7fd3ff', '#9be38f'], 30, 5, 'box');
+    missionIdx++; updateStats(); setMissionVisibility(); $('#mission').textContent = m.next;
+    const last = missionIdx === missions.length;
+    choicesEl.replaceChildren(); $('#story').textContent = (tries ? '答對了！👏' : '一次就答對！太厲害了 🌟') + '\n解鎖 ' + m.photos.length + ' 張照片，點照片可以放大：';
+    showPhotos(m.photos); $('#close').style.display = ''; $('#close').textContent = last ? '🎉 完成冒險' : '繼續冒險';
+    if (last) { onClose = () => { sfx.fanfare(); for (let k = 0; k < 4; k++) setTimeout(() => burst(player.position.x + (Math.random() - .5) * 4, 4, player.position.z + (Math.random() - .5) * 4, ['#ffce52', '#ff9291', '#7fd3ff', '#9be38f', '#c39bff'], 30, 4, 'box'), k * 350); toast('🎉 恭喜完成所有任務！'); }; }
+  } })) });
+}
+setMissionVisibility();
+
+// --- petals to collect (walk over them) ---
+const petalSpots = [[1.5, 5], [-1.5, 2.5], [4, 0], [8.5, -2], [11.2, -4], [4.5, -7], [0, -9.5], [-4, -10.5], [-8.5, -12], [-10, -14], [-4, -15], [1, -17], [4.2, -21], [8.5, -24], [10, -26], [3, -27.5], [-2, -33], [-8.5, -35], [-10, -38], [0, -41.5]];
+const petals = petalSpots.map(([x, z], i) => { const p = ball(x, .5, z, .2, ['#ff9ec2', '#ffd36e', '#c7a6ff'][i % 3]); p.scale.set(1.4, .5, 1.4); p.material = new THREE.MeshStandardMaterial({ color: ['#ff9ec2', '#ffd36e', '#c7a6ff'][i % 3], emissive: '#ff9ec2', emissiveIntensity: .35 }); return { m: p, x, z, got: false }; });
+let petalCount = 0;
+updateStats();
+
+/* ================= Input ================= */
+let keys = {};
+let nearest = null;
+function interact() { initAudio(); if (isOpen() || !nearest) return; nearest.action(); }
+$('#action').onclick = interact;
+addEventListener('keydown', e => {
+  if ($('#viewer').style.display === 'flex') { if (e.key === 'ArrowLeft') stepViewer(-1); else if (e.key === 'ArrowRight') stepViewer(1); else if (e.key === 'Escape' || e.key === ' ') { $('#viewer').style.display = 'none'; sfx.close(); } e.preventDefault(); return; }
+  if (modal.style.display !== 'none') { if ((e.key === 'Enter' || e.key === ' ' || e.key === 'Escape') && $('#close').style.display !== 'none') { e.preventDefault(); closeCard(); } return; }
+  keys[e.key.toLowerCase()] = true;
+  if ([' ', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) e.preventDefault();
+  if (e.key === ' ' || e.key === 'Enter') interact();
+});
+addEventListener('keyup', e => keys[e.key.toLowerCase()] = false);
+document.querySelectorAll('[data-k]').forEach(b => { const k = b.dataset.k; b.addEventListener('pointerdown', e => { e.preventDefault(); b.setPointerCapture(e.pointerId); keys[k] = true; }); for (const ev of ['pointerup', 'pointercancel', 'lostpointercapture']) b.addEventListener(ev, () => keys[k] = false); });
+addEventListener('blur', () => keys = {});
+
+/* ================= Loop ================= */
+camera.position.set(9, 13, 23); camera.lookAt(0, 0, 3);
+const clock = new THREE.Clock(); let elapsed = 0, stepTimer = 0, bumpCool = 0, walkPhase = 0;
+const blocked = (nx, nz) => barriers.some(b => nx > b.from - .55 && nx < b.to + .55 && Math.abs(nz - b.z) < 1.05) || colliders.some(c => Math.hypot(nx - c.x, nz - c.z) < c.r + .45) || houseBoxes.some(h => Math.abs(nx - h.x) < h.w / 2 + .4 && Math.abs(nz - h.z) < h.d / 2 + .4);
+function loop() {
+  requestAnimationFrame(loop);
+  const dt = Math.min(clock.getDelta(), .05); elapsed += dt;
+  scheduleMusic();
+  treetops.forEach((t, i) => t.rotation.z = Math.sin(elapsed * 1.2 + i) * .06);
+  leaves.forEach((l, i) => { const q = (elapsed * .38 + l.phase) % 4; l.mesh.position.set(l.x + Math.sin(elapsed + i) * .75, 3.4 - q * .8, l.z + Math.cos(elapsed * .7 + i) * .55); l.mesh.rotation.z = elapsed + i; });
+  clouds.forEach(c => { c.position.x += dt * .22; if (c.position.x > 22) c.position.x = -22; });
+  if (feedTime > 0) feedTime -= dt;
+  fish.forEach(f => { const pond = f.z > 0, sp = pond && feedTime > 0 ? 3 : f.speed, rr = pond && feedTime > 0 ? .35 : f.r; f.mesh.position.x = f.x + Math.sin(elapsed * sp + f.phase) * rr; f.mesh.position.z = f.z + Math.cos(elapsed * sp + f.phase) * .3; f.mesh.rotation.y = -elapsed * sp - f.phase; });
+
+  // side-object animations
+  catTail.rotation.z = .5 + Math.sin(elapsed * 3) * .3;
+  if (catJump > 0) { catJump -= dt * 1.6; cat.position.y = Math.sin(Math.max(catJump, 0) * Math.PI) * .6; } else cat.position.y = Math.abs(Math.sin(elapsed * 1.5)) * .03;
+  catHead.position.y = .68 + Math.sin(elapsed * 2) * .02;
+  if (wheelSpin > 0) { wheelSpin -= dt; wheels.forEach(w => w.rotation.z -= dt * 12); bike.position.y = Math.abs(Math.sin(elapsed * 30)) * .03; }
+  chimeSwing = Math.max(0, chimeSwing - dt); chimeRods.forEach((r, i) => r.rotation.z = Math.sin(elapsed * 6 + i) * (.08 + chimeSwing * .2));
+  if (Math.random() < dt * .3) chimeSwing = Math.max(chimeSwing, .3);
+  flagUp = Math.max(0, flagUp - dt * .2); flag.rotation.z = flagUp > 0 ? -Math.PI / 2 : 0;
+  blooms.forEach((b, i) => b.position.y = .5 + Math.sin(elapsed * 2 + i) * .04);
+  if (birdFly > 0) { birdFly -= dt; const a = (3 - birdFly) * 2.1; bird.position.set(5 + Math.sin(a) * 3, .45 + Math.sin(Math.min(3 - birdFly, birdFly) * 1.2) * 3, -44.4 + (1 - Math.cos(a)) * 1.5); bird.rotation.y = -a; } else { bird.position.set(5, .45 + Math.abs(Math.sin(elapsed * 4)) * .05, -44.4); bird.rotation.y = 0; }
+
+  // markers pulse & bob
+  for (const it of interactables) {
+    if (it.disabled) continue;
+    const s = 1 + Math.sin(elapsed * 3 + it.x) * .12; it.ring.scale.set(s, s, 1);
+    it.ring.material.opacity = it === nearest ? .95 : (it.done ? .3 : .65);
+    it.icon.position.y = it.iconY + Math.sin(elapsed * 2.5 + it.z) * .15;
+    const big = it === nearest ? 1.35 : 1; const base = it.type === 'mission' ? 1.3 : (it.done ? .75 : 1);
+    it.icon.scale.setScalar(base * big);
+    if (it.star) { it.star.rotation.y += dt * 2; it.star.position.y = 1.3 + Math.sin(elapsed * 2.8) * .2; it.beam.material.opacity = .2 + Math.sin(elapsed * 3) * .08; }
+  }
+  petals.forEach((p, i) => { if (!p.got) { p.m.rotation.y += dt * 2; p.m.position.y = .5 + Math.sin(elapsed * 3 + i) * .1; } });
+
+  // movement
+  let moving = false;
+  if (!isOpen()) {
+    const x = (keys.d || keys.arrowright ? 1 : 0) - (keys.a || keys.arrowleft ? 1 : 0), z = (keys.s || keys.arrowdown ? 1 : 0) - (keys.w || keys.arrowup ? 1 : 0);
+    if (x || z) {
+      const l = Math.hypot(x, z), nx = THREE.MathUtils.clamp(player.position.x + x / l * 5 * dt, -12, 12), nz = THREE.MathUtils.clamp(player.position.z + z / l * 5 * dt, -48, 10);
+      player.rotation.y = Math.atan2(x, z);
+      if (!blocked(nx, nz)) { player.position.x = nx; player.position.z = nz; moving = true; }
+      else if (x && !blocked(nx, player.position.z)) { player.position.x = nx; moving = true; }
+      else if (z && !blocked(player.position.x, nz)) { player.position.z = nz; moving = true; }
+      else if (bumpCool <= 0) { sfx.bump(); bumpCool = .6; toast('🚧 這裡過不去，找找缺口！'); }
+    }
+  }
+  bumpCool -= dt;
+  if (moving) {
+    walkPhase += dt * 11; stepTimer -= dt;
+    if (stepTimer <= 0) { sfx.step(onPath(player.position.x, player.position.z)); stepTimer = .29; }
+    legs[0].rotation.x = Math.sin(walkPhase) * .6; legs[1].rotation.x = -Math.sin(walkPhase) * .6;
+    body.position.y = 1.05 + Math.abs(Math.sin(walkPhase)) * .08; head.position.y = 1.9 + Math.abs(Math.sin(walkPhase)) * .08; hair.position.y = head.position.y + .1;
+  } else { legs.forEach(l => l.rotation.x *= .8); stepTimer = 0; }
+
+  // puddle splash
+  const inP = Math.hypot((player.position.x + .8) / 1.1, (player.position.z + 31.5) / .7) < 1;
+  if (inP && !inPuddle) { sfx.splash(); burst(player.position.x, .3, player.position.z, ['#bfefff', '#ffffff'], 14, 3); toast('啪嚓！踩到水窪了'); }
+  inPuddle = inP;
+  // petals
+  for (const p of petals) if (!p.got && Math.hypot(player.position.x - p.x, player.position.z - p.z) < .9) {
+    p.got = true; p.m.visible = false; petalCount++; sfx.petal(); burst(p.x, .6, p.z, [p.m.material.color.getStyle(), '#ffffff'], 8, 2.5); updateStats();
+    if (petalCount === petals.length) { sfx.fanfare(); toast('🌸 所有花瓣都收集到了！'); }
+  }
+  // ambient
+  if (A.water) { const d = Math.min(Math.abs(player.position.z + 47), Math.hypot(player.position.x + 8, player.position.z - 8)); A.water.gain.setTargetAtTime(Math.max(0, 1 - d / 9) * .14, A.ctx.currentTime, .3); }
+  birdTimer -= dt; if (birdTimer <= 0) { sfx.chirp(.025 + Math.random() * .02); birdTimer = 4 + Math.random() * 6; }
+
+  // nearest interactable
+  nearest = null; let best = Infinity;
+  for (const it of interactables) { if (it.disabled) continue; const d = Math.hypot(player.position.x - it.x, player.position.z - it.z); if (d < it.r && d < best) { best = d; nearest = it; } }
+  const pr = $('#prompt');
+  if (nearest && !isOpen()) { pr.style.display = 'block'; pr.textContent = '按空白鍵／互動：' + nearest.label; $('#action').textContent = nearest.label; $('#action').classList.add('ready'); }
+  else { pr.style.display = 'none'; $('#action').textContent = '✨ 互動'; $('#action').classList.remove('ready'); }
+
+  // guide arrow toward current mission
+  const m = missions[missionIdx];
+  if (m) { const dx = m.x - player.position.x, dz = m.z - player.position.z, dist = Math.hypot(dx, dz); guideHolder.visible = dist > 3; guideHolder.position.set(player.position.x, 0, player.position.z); guideHolder.rotation.y = Math.atan2(-dx, -dz); guide.material.opacity = .6 + Math.sin(elapsed * 5) * .3; } else guideHolder.visible = false;
+
+  // particles
+  for (let i = particles.length - 1; i >= 0; i--) { const p = particles[i]; p.vy -= 9 * dt; p.m.position.x += p.vx * dt; p.m.position.y = Math.max(.05, p.m.position.y + p.vy * dt); p.m.position.z += p.vz * dt; p.m.rotation.x += dt * 5; p.life -= dt; if (p.life <= 0) { scene.remove(p.m); p.m.geometry.dispose(); particles.splice(i, 1); } }
+  if (toastT > 0) { toastT -= dt; if (toastT <= 0) $('#toast').classList.remove('show'); }
+
+  camera.position.lerp(new THREE.Vector3(player.position.x + 9, 13, player.position.z + 16), .06);
+  camera.lookAt(player.position.x, 0, player.position.z - 4);
+  renderer.render(scene, camera);
+}
+loop();
+addEventListener('resize', () => { camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); renderer.setSize(innerWidth, innerHeight); });
+</script>
+</body>
+</html>
