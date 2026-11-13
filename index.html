@@ -39,6 +39,7 @@ button:active{transform:translateY(3px);box-shadow:0 1px 0 #d89f47}
 @keyframes shake{25%{transform:translateX(-8px)}75%{transform:translateX(8px)}}
 #photos{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:10px 0}
 #photos img{width:100%;height:92px;object-fit:cover;border-radius:10px;cursor:zoom-in;border:3px solid #fff;box-shadow:0 2px 6px #0002}
+#video{width:100%;max-height:48dvh;border-radius:12px;display:none;background:#000;margin:6px 0}
 #photos .lock{height:92px;border-radius:10px;background:#e3ece9;display:flex;align-items:center;justify-content:center;font-size:26px;color:#9bb}
 small{font-size:12px}
 #legend{font-size:12px;line-height:1.6}
@@ -67,10 +68,12 @@ small{font-size:12px}
 📷 粉色圈：路邊照片看板，13 張都能收集
 💙 藍色圈：貓咪、腳踏車、風鈴…都可以玩
 🌸 路上的小花瓣走過去就能撿
+🎁 完成 5 個任務，解鎖《伴伴麵店》寶藏影片
 
 🔊 請打開聲音（iPhone 請關掉靜音鍵）</p>
   <div id="choices"></div>
   <div id="photos"></div>
+  <video id="video" controls playsinline preload="none"></video>
   <button id="close">出發！</button>
 </div></div>
 <div id="viewer"><img id="vimg" alt=""><div class="row"><button id="vprev">◀</button><button id="vclose">關閉</button><button id="vnext">▶</button></div></div>
@@ -334,7 +337,7 @@ let onClose = null;
 const isOpen = () => modal.style.display !== 'none' || $('#viewer').style.display === 'flex';
 function openCard({ title, text, photos = [], choices = null, button = '好的', after = null }) {
   $('#title').textContent = title; $('#story').textContent = text; choicesEl.replaceChildren(); photosEl.replaceChildren();
-  showPhotos(photos);
+  showPhotos(photos); hideVideo();
   if (choices) for (const ch of choices) { const b = document.createElement('button'); b.textContent = ch.text; b.onclick = () => ch.pick(b); choicesEl.append(b); }
   $('#close').textContent = button; $('#close').style.display = choices ? 'none' : ''; onClose = after;
   modal.style.display = 'flex'; sfx.open();
@@ -346,7 +349,9 @@ function showPhotos(list, lockedTotal = 0) {
     const im = document.createElement('img'); im.src = 'photos/' + n + '.jpg'; im.alt = '旅途照片 ' + n; im.onclick = () => openViewer(list.filter(v => v !== null), n); photosEl.append(im);
   }
 }
-function closeCard() { modal.style.display = 'none'; sfx.close(); const f = onClose; onClose = null; f && f(); }
+function hideVideo() { const v = $('#video'); v.pause(); v.style.display = 'none'; if (A.music) A.music.gain.value = .5; }
+function showTreasureVideo() { const v = $('#video'); if (!v.getAttribute('src')) v.src = 'videos/treasure.mp4'; v.style.display = 'block'; v.onplay = () => { if (A.music) A.music.gain.value = 0; }; v.onpause = v.onended = () => { if (A.music) A.music.gain.value = .5; }; }
+function closeCard() { hideVideo(); modal.style.display = 'none'; sfx.close(); const f = onClose; onClose = null; f && f(); }
 $('#close').onclick = closeCard;
 let vList = [], vIdx = 0;
 function openViewer(list, n) { vList = list; vIdx = list.indexOf(n); $('#vimg').src = 'photos/' + n + '.jpg'; $('#viewer').style.display = 'flex'; sfx.camera(); }
@@ -363,7 +368,9 @@ $('#mutebtn').onclick = e => { initAudio(); A.muted = !A.muted; if (A.master) A.
 $('#albumbtn').onclick = () => {
   if (isOpen()) return;
   const all = []; for (let n = 1; n <= 13; n++) all.push(seenPhotos.has(n) ? n : null);
-  openCard({ title: '📒 回憶相簿', text: `已收集 ${seenPhotos.size} / 13 張照片\n找路邊的 📷 粉色看板和 ⭐ 任務就能解鎖！點照片可以放大。`, photos: all, button: '關閉' });
+  const done = missionIdx === missions.length;
+  openCard({ title: '📒 回憶相簿', text: `已收集 ${seenPhotos.size} / 13 張照片\n找路邊的 📷 粉色看板和 ⭐ 任務就能解鎖！點照片可以放大。` + (done ? '\n\n🎁 寶藏影片：《伴伴麵店》' : '\n\n🔒 完成 5 個任務可解鎖寶藏影片'), photos: all, button: '關閉' });
+  if (done) showTreasureVideo();
 };
 
 /* ================= Interactables ================= */
@@ -469,7 +476,7 @@ function askMission(i) {
     missionIdx++; updateStats(); setMissionVisibility(); $('#mission').textContent = m.next;
     const last = missionIdx === missions.length;
     choicesEl.replaceChildren(); $('#story').textContent = (tries ? '答對了！👏' : '一次就答對！太厲害了 🌟') + '\n解鎖 ' + m.photos.length + ' 張照片，點照片可以放大：';
-    showPhotos(m.photos); $('#close').style.display = ''; $('#close').textContent = last ? '🎉 完成冒險' : '繼續冒險';
+    showPhotos(m.photos); if (last) { $('#story').textContent += '\n\n🎁 最大的寶藏：《伴伴麵店》影片！按播放鍵觀看 ▶'; showTreasureVideo(); } $('#close').style.display = ''; $('#close').textContent = last ? '🎉 完成冒險' : '繼續冒險';
     if (last) { onClose = () => { sfx.fanfare(); for (let k = 0; k < 4; k++) setTimeout(() => burst(player.position.x + (Math.random() - .5) * 4, 4, player.position.z + (Math.random() - .5) * 4, ['#ffce52', '#ff9291', '#7fd3ff', '#9be38f', '#c39bff'], 30, 4, 'box'), k * 350); toast('🎉 恭喜完成所有任務！'); }; }
   } })) });
 }
@@ -488,7 +495,7 @@ function interact() { initAudio(); if (isOpen() || !nearest) return; nearest.act
 $('#action').onclick = interact;
 addEventListener('keydown', e => {
   if ($('#viewer').style.display === 'flex') { if (e.key === 'ArrowLeft') stepViewer(-1); else if (e.key === 'ArrowRight') stepViewer(1); else if (e.key === 'Escape' || e.key === ' ') { $('#viewer').style.display = 'none'; sfx.close(); } e.preventDefault(); return; }
-  if (modal.style.display !== 'none') { if ((e.key === 'Enter' || e.key === ' ' || e.key === 'Escape') && $('#close').style.display !== 'none') { e.preventDefault(); closeCard(); } return; }
+  if (modal.style.display !== 'none') { if ((e.key === 'Enter' || e.key === 'Escape' || (e.key === ' ' && document.activeElement?.tagName !== 'VIDEO')) && $('#close').style.display !== 'none') { e.preventDefault(); closeCard(); } return; }
   keys[e.key.toLowerCase()] = true;
   if ([' ', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) e.preventDefault();
   if (e.key === ' ' || e.key === 'Enter') interact();
