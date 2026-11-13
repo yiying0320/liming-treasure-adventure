@@ -43,6 +43,7 @@ button:active{transform:translateY(3px);box-shadow:0 1px 0 #d89f47}
 #photos .lock{height:92px;border-radius:10px;background:#e3ece9;display:flex;align-items:center;justify-content:center;font-size:26px;color:#9bb}
 small{font-size:12px}
 #legend{font-size:12px;line-height:1.6}
+@media(max-width:600px){#topright{flex-direction:column;gap:6px}#topright button{padding:8px 10px;font-size:13px}}
 </style>
 </head>
 <body>
@@ -55,7 +56,7 @@ small{font-size:12px}
   <div id="toast" class="pill"></div>
   <div id="controls"><span></span><button data-k="w">▲</button><span></span><button data-k="a">◀</button><button data-k="s">▼</button><button data-k="d">▶</button></div>
   <button id="action">✨ 互動</button>
-  <div id="topright"><button id="albumbtn">📒 相簿</button><button id="mutebtn">🔊 音效開</button></div>
+  <div id="topright"><button id="treasurebtn">🎁 寶箱影片</button><button id="albumbtn">📒 相簿</button><button id="mutebtn">🔊 音效開</button></div>
 </div>
 <div id="modal"><div class="card">
   <h2 id="title">🌼 黎明尋寶小冒險</h2>
@@ -68,7 +69,7 @@ small{font-size:12px}
 📷 粉色圈：路邊照片看板，13 張都能收集
 💙 藍色圈：貓咪、腳踏車、風鈴…都可以玩
 🌸 路上的小花瓣走過去就能撿
-🎁 完成 5 個任務，解鎖《伴伴麵店》寶藏影片
+🎁 隨時點右上角「寶箱影片」觀看《伴伴麵店》，不必先完成任務
 
 🔊 請打開聲音（iPhone 請關掉靜音鍵）</p>
   <div id="choices"></div>
@@ -351,6 +352,8 @@ function showPhotos(list, lockedTotal = 0) {
 }
 function hideVideo() { const v = $('#video'); v.pause(); v.style.display = 'none'; if (A.music) A.music.gain.value = .5; }
 function showTreasureVideo() { const v = $('#video'); if (!v.getAttribute('src')) v.src = 'videos/treasure.mp4'; v.style.display = 'block'; v.onplay = () => { if (A.music) A.music.gain.value = 0; }; v.onpause = v.onended = () => { if (A.music) A.music.gain.value = .5; }; }
+function openTreasure() { initAudio(); keys = {}; openCard({ title: '🎁 黎明溝大寶藏', text: '《伴伴麵店》寶藏影片，隨時都能觀看與重播。點播放鍵開始 ▶', button: '回到散步' }); showTreasureVideo(); }
+$('#treasurebtn').onclick = openTreasure;
 function closeCard() { hideVideo(); modal.style.display = 'none'; sfx.close(); const f = onClose; onClose = null; f && f(); }
 $('#close').onclick = closeCard;
 let vList = [], vIdx = 0;
@@ -369,8 +372,8 @@ $('#albumbtn').onclick = () => {
   if (isOpen()) return;
   const all = []; for (let n = 1; n <= 13; n++) all.push(seenPhotos.has(n) ? n : null);
   const done = missionIdx === missions.length;
-  openCard({ title: '📒 回憶相簿', text: `已收集 ${seenPhotos.size} / 13 張照片\n找路邊的 📷 粉色看板和 ⭐ 任務就能解鎖！點照片可以放大。` + (done ? '\n\n🎁 寶藏影片：《伴伴麵店》' : '\n\n🔒 完成 5 個任務可解鎖寶藏影片'), photos: all, button: '關閉' });
-  if (done) showTreasureVideo();
+  openCard({ title: '📒 回憶相簿', text: `已收集 ${seenPhotos.size} / 13 張照片\n找路邊的 📷 粉色看板和 ⭐ 任務就能解鎖！點照片可以放大。` + '\n\n🎁 寶藏影片隨時可看：《伴伴麵店》', photos: all, button: '關閉' });
+  showTreasureVideo();
 };
 
 /* ================= Interactables ================= */
@@ -481,6 +484,10 @@ function askMission(i) {
   } })) });
 }
 setMissionVisibility();
+
+// Treasure remains accessible independently of the sequential missions.
+cube(-7, .5, -39.5, 1.5, 1, 1, '#c48b50'); cube(-7, 1.05, -39.5, 1.65, .2, 1.1, '#edbc67'); cube(-7, .65, -38.97, .22, .4, .08, '#ffdc70');
+addInteractable({ type: 'side', x: -7, z: -39.5, r: 2.5, emoji: '🎁', label: '🎁 播放寶箱影片', action: openTreasure });
 
 // --- petals to collect (walk over them) ---
 const petalSpots = [[1.5, 5], [-1.5, 2.5], [4, 0], [8.5, -2], [11.2, -4], [4.5, -7], [0, -9.5], [-4, -10.5], [-8.5, -12], [-10, -14], [-4, -15], [1, -17], [4.2, -21], [8.5, -24], [10, -26], [3, -27.5], [-2, -33], [-8.5, -35], [-10, -38], [0, -41.5]];
